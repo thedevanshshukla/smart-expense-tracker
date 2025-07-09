@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - Smart Expense Tracker{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4">
+    <a class="navbar-brand fw-bold text-primary" href="{{ url_for('home') }}">SmartExpense</a>
+    <div class="ms-auto">
+        <a class="btn btn-outline-primary me-2" href="{{ url_for('auth.login') }}">Login</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4 text-primary">Create Account</h3>
+
+                    {% with messages = get_flashed_messages(category_filter=['danger']) %}
+                        {% if messages %}
+                            {% for msg in messages %}
+                                <div class="alert alert-danger">{{ msg }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {% for field in [signup_form.name, signup_form.email, signup_form.password, signup_form.confirm_password] %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <form method="post">
+                        {{ signup_form.csrf_token }}
+
+                        <div class="mb-3">
+                            {{ signup_form.name.label(class="form-label") }}
+                            {{ signup_form.name(class="form-control bg-white") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ signup_form.email.label(class="form-label") }}
+                            {{ signup_form.email(class="form-control bg-white") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ signup_form.password.label(class="form-label") }}
+                            {{ signup_form.password(class="form-control bg-white") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ signup_form.confirm_password.label(class="form-label") }}
+                            {{ signup_form.confirm_password(class="form-control bg-white") }}
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            {{ signup_form.submit(class="btn btn-success") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Smart Expense Tracker{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm px-4">
+    <a class="navbar-brand fw-bold text-primary" href="{{ url_for('home') }}">SmartExpense</a>
+    <div class="ms-auto">
+        <a class="btn btn-outline-primary me-2" href="{{ url_for('auth.signup') }}">Sign Up</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h3 class="card-title text-center mb-4 text-primary">Login</h3>
+
+                    {# Flash messages #}
+                    {% with messages = get_flashed_messages(category_filter=['danger', 'info']) %}
+                        {% if messages %}
+                            {% for msg in messages %}
+                                <div class="alert alert-danger">{{ msg }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {# Field-level errors #}
+                    {% for field in [login_form.email, login_form.password] %}
+                        {% for error in field.errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <form method="post">
+                        {{ login_form.csrf_token }}
+
+                        <div class="mb-3">
+                            {{ login_form.email.label(class="form-label") }}
+                            {{ login_form.email(class="form-control bg-white") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ login_form.password.label(class="form-label") }}
+                            {{ login_form.password(class="form-control bg-white") }}
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            {{ login_form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
