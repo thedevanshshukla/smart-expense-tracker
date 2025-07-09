@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Expense Charts{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center mb-4">📊 Expense Visualization</h2>
+
+    <!-- Chart Controls -->
+    <div class="text-center mb-4">
+        <label for="viewMode" class="form-label me-2 fw-bold">Select View:</label>
+        <select id="viewMode" class="form-select d-inline-block w-auto">
+            <option value="daily">Daily</option>
+            <option value="monthly" selected>Monthly</option>
+        </select>
+    </div>
+
+    <!-- Chart Canvas -->
+    <div class="card shadow-sm p-4">
+        <canvas id="expenseChart" height="100"></canvas>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('dashboard.dashboard_home') }}" class="btn btn-outline-secondary">← Back to Dashboard</a>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    let chartInstance;
+
+    function renderChart(labels, datasets) {
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: 'Expenses by Category' }
+                },
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Amount (₹)' } }
+                }
+            }
+        });
+    }
+
+    async function fetchChartData(viewMode) {
+        const res = await fetch(`/dashboard/chart-data/category?view=${viewMode}`);
+        const data = await res.json();
+
+        const labels = data.labels;
+        const rawData = data.data;
+
+        const categorySet = new Set();
+        rawData.forEach(row => categorySet.add(row.category));
+
+        const datasets = Array.from(categorySet).map(cat => {
+            const color = '#' + Math.floor(Math.random()*16777215).toString(16);
+            const values = labels.map(label => {
+                const match = rawData.find(d => d.category === cat && d.label === label);
+                return match ? match.amount : 0;
+            });
+
+            return {
+                label: cat,
+                backgroundColor: color,
+                data: values
+            };
+        });
+
+        renderChart(labels, datasets);
+    }
+
+    // Initial load
+    fetchChartData('monthly');
+
+    // Handle view change
+    document.getElementById('viewMode').addEventListener('change', function() {
+        fetchChartData(this.value);
+    });
+</script>
+{% endblock %}

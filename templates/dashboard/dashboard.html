@@ -1,0 +1,320 @@
+<style>
+    .expense-row:hover .delete-form {
+        display: inline-block !important;
+    }
+</style>
+
+{% extends "base.html" %}
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light px-4 border-bottom">
+    <a class="navbar-brand" href="{{ url_for('dashboard.dashboard_home') }}">
+        <span>Smart Expense Tracker</span>
+    </a>
+
+    <!-- Mobile toggler -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item">
+                <a class="nav-link {% if request.path == url_for('dashboard.dashboard_home') %}active{% endif %}" href="{{ url_for('dashboard.dashboard_home') }}">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.path == url_for('dashboard.visualize_page') %}active{% endif %}" href="{{ url_for('dashboard.visualize_page') }}">Graphs</a>
+            </li>
+        </ul>
+
+        <!-- Logout button on right -->
+        <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+                <a class="btn btn-outline-danger btn-sm mt-1" href="{{ url_for('auth.logout') }}">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+{% endblock %}
+
+
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="text-center mb-4">Welcome, {{ user_name }} 👋</h2>
+
+    <!-- Total Spent -->
+    <div class="row mb-4">
+        <div class="col-md-4 offset-md-4">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Spent (All Time)</h5>
+                    <p class="card-text fs-4">₹ {{ "%.2f"|format(total_spent) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Expense Form -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light"><strong>Add a New Expense</strong></div>
+        <div class="card-body">
+            <form method="POST">
+                {{ form.csrf_token }}
+                <div class="row g-3">
+                    <div class="col-md-2">{{ form.amount.label(class="form-label") }}{{ form.amount(class="form-control", placeholder="e.g. 150.50") }}</div>
+                    <div class="col-md-3">
+                        {{ form.note.label(class="form-label") }}
+                        {{ form.note(class="form-control", placeholder="e.g. Lunch at cafe", id="noteInput") }}
+                    </div>
+
+                    <div class="col-md-2">
+                        {{ form.category.label(class="form-label") }}
+                        {{ form.category(class="form-control", id="categoryInput", placeholder="e.g. Food") }}
+                        <small id="categoryHelp" class="form-text text-muted"></small>
+                    </div>
+
+                    <div class="col-md-3"><label class="form-label">Date of Expense</label><input type="date" name="date" class="form-control" value="{{ current_date }}"></div>
+                    <div class="col-md-2 align-self-end">{{ form.submit(class="btn btn-success w-100") }}</div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Link to Graph Page -->
+    <div class="text-end mb-2">
+        <a href="{{ url_for('dashboard.visualize_page') }}" class="btn btn-outline-info btn-sm">
+            📊 View Expense Charts
+        </a>
+    </div>
+
+
+    <!-- Filter Bar -->
+    <div class="card mb-3 shadow-sm">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">Category</label>
+                    <select class="form-select form-select-sm" name="category">
+                        <option value="">All</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {% if selected_category == cat.lower() %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Quick Filter</label>
+                    <select class="form-select form-select-sm" name="time_filter">
+                        <option value="">All Time</option>
+                        <option value="week" {% if time_filter == 'week' %}selected{% endif %}>This Week</option>
+                        <option value="month" {% if time_filter == 'month' %}selected{% endif %}>This Month</option>
+                        <option value="year" {% if time_filter == 'year' %}selected{% endif %}>This Year</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Year</label>
+                    <input type="number" class="form-control form-control-sm" name="year" placeholder="e.g. 2024" value="{{ selected_year }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Month</label>
+                    <select class="form-select form-select-sm" name="month">
+                        <option value="">--</option>
+                        {% for i in range(1, 13) %}
+                            <option value="{{ i }}" {% if selected_month == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">From</label>
+                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ selected_start }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">To</label>
+                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ selected_end }}">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-primary btn-sm w-100" type="submit">Apply</button>
+                </div>
+                <div class="col-auto">
+                    <span class="badge bg-success fs-6">Filtered ₹ {{ "%.2f"|format(total_filtered_spent) }}</span>
+                </div>
+                <div class="col-auto d-flex gap-2">
+                    <a href="{{ url_for('dashboard.export_csv', **request.args.to_dict()) }}" class="btn btn-outline-success btn-sm">Export CSV</a>
+                    <a href="{{ url_for('dashboard.export_pdf', **request.args.to_dict()) }}" class="btn btn-outline-danger btn-sm">Export PDF</a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+
+    <!-- Expenses Table with Carousel -->
+    {% if expenses %}
+    <div id="expenseCarousel" class="carousel slide" data-bs-interval="false" data-bs-wrap="false">
+        <div class="carousel-inner">
+            {% set total_pages = (expenses|length // 5) + (1 if expenses|length % 5 > 0 else 0) %}
+            {% for chunk in expenses|batch(5, fill_with=None) %}
+            <div class="carousel-item {% if loop.first %}active{% endif %}">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Date</th><th>Amount (₹)</th><th>Category</th><th>Note</th></tr>
+                        </thead>
+                       <tbody>
+    {% for exp in chunk if exp %}
+    <tr class="expense-row position-relative">
+        <td>{{ exp.created_at.strftime("%d-%b-%Y") }}</td>
+        <td>₹ {{ "%.2f"|format(exp.amount) }}</td>
+        <td>{{ exp.category }}</td>
+        <td>
+            {{ exp.title }}
+            <button type="button" class="btn btn-sm btn-danger position-absolute end-0 top-50 translate-middle-y me-2 d-none delete-form"
+                    data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ exp.id }}">
+                🗑️
+            </button>
+
+            <!-- Delete Confirmation Modal -->
+            <div class="modal fade" id="confirmDeleteModal{{ exp.id }}" tabindex="-1" aria-labelledby="confirmModalLabel{{ exp.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Confirm Deletion</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            Are you sure you want to delete this expense of ₹{{ "%.2f"|format(exp.amount) }}?
+                        </div>
+                        <div class="modal-footer">
+                            <form method="POST" action="{{ url_for('dashboard.delete_expense', expense_id=exp.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                            </form>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        <div class="d-flex justify-content-center align-items-center mt-2 gap-1">
+            <button class="btn btn-outline-secondary btn-xs px-2 py-0" type="button" id="prevSlide">←</button>
+            {% for i in range(total_pages) %}
+            <button class="btn btn-xs px-2 py-0 page-indicator fw-bold small" style="font-size: 0.75rem;" data-index="{{ i }}">{{ i }}</button>
+            {% endfor %}
+            <button class="btn btn-outline-secondary btn-xs px-2 py-0" type="button" id="nextSlide">→</button>
+        </div>
+    </div>
+
+    <style>
+        .expense-row:hover .delete-form {
+            display: inline-block !important;
+        }
+    </style>
+
+    <script>
+        const carousel = document.getElementById('expenseCarousel');
+        const items = carousel.querySelectorAll('.carousel-item');
+        const indicators = document.querySelectorAll('.page-indicator');
+        const prevBtn = document.getElementById('prevSlide');
+        const nextBtn = document.getElementById('nextSlide');
+
+        let currentIndex = 0;
+
+        function updateCarousel(index) {
+            items.forEach((item, i) => {
+                item.classList.remove('active');
+                if (i === index) item.classList.add('active');
+            });
+            indicators.forEach((btn, i) => {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline-secondary');
+                if (i === index) {
+                    btn.classList.add('btn-primary');
+                    btn.classList.remove('btn-outline-secondary');
+                }
+            });
+
+            prevBtn.disabled = index === 0;
+            nextBtn.disabled = index === items.length - 1;
+
+            prevBtn.classList.toggle('btn-outline-secondary', index > 0);
+            nextBtn.classList.toggle('btn-outline-secondary', index < items.length - 1);
+            prevBtn.classList.toggle('btn-secondary', index === 0);
+            nextBtn.classList.toggle('btn-secondary', index === items.length - 1);
+        }
+
+        indicators.forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentIndex = parseInt(btn.dataset.index);
+                updateCarousel(currentIndex);
+            });
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateCarousel(currentIndex);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentIndex < items.length - 1) {
+                currentIndex++;
+                updateCarousel(currentIndex);
+            }
+        });
+
+        updateCarousel(0);
+    </script>
+    {% else %}
+    <p class="text-center text-muted py-5">No expenses found for the selected filter.</p>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const noteInput = document.getElementById('noteInput');
+    const categoryInput = document.getElementById('categoryInput');
+    const categoryHelp = document.getElementById('categoryHelp');
+
+    noteInput.addEventListener('blur', function () {
+        const note = noteInput.value.trim();
+        if (!note) return;
+
+        fetch("/dashboard/predict-category", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ note: note })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.category) {
+                categoryInput.value = data.category;
+                categoryHelp.innerText = `AI-suggested category: ${data.category}`;
+            } else {
+                categoryHelp.innerText = "";
+            }
+        })
+        .catch(err => {
+            categoryHelp.innerText = "";
+            console.error("Prediction error:", err);
+        });
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
