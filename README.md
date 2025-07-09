@@ -95,5 +95,5 @@ flask run
 
 ## 👤 Author
 
-**Shubham Shukla**  
+**Devansh Shukla**  
 *Smart Expense Tracker Project - 2025*
