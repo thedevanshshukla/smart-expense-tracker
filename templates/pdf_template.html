@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { border: 1px solid #000; padding: 8px; }
+        th { background-color: #eee; }
+    </style>
+</head>
+<body>
+    <h2>Expense Report</h2>
+    <table>
+        <thead>
+            <tr><th>Date</th><th>Amount</th><th>Category</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+            {% for exp in expenses %}
+            <tr>
+                <td>{{ exp.created_at.strftime("%d-%b-%Y") }}</td>
+                <td>₹ {{ "%.2f"|format(exp.amount) }}</td>
+                <td>{{ exp.category }}</td>
+                <td>{{ exp.title }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
